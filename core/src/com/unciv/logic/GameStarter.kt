@@ -63,7 +63,10 @@ object GameStarter {
 
         var phaseOneChosenCivs: List<Player> = emptyList() // Never used, but the compiler needs it due to runAndMeasure capturing the var
         if (gameSetupInfo.mapParameters.name != "") runAndMeasure("loadMap") {
-            tileMap = MapSaver.loadMap(gameSetupInfo.mapFile!!)
+            val mapFile = gameSetupInfo.mapFile
+                ?: MapSaver.findMapFileByName(gameSetupInfo.mapParameters.name)
+                ?: throw Exception("Map \"${gameSetupInfo.mapParameters.name}\" not found (file missing or mod not loaded).")
+            tileMap = MapSaver.loadMap(mapFile)
             // Don't override the map parameters - this can include if we world wrap or not!
             phaseOneChosenCivs = chooseCivilizations(gameSetupInfo.gameParameters, gameInfo, ruleset, existingMap = true)
         } else runAndMeasure("generateMap") {

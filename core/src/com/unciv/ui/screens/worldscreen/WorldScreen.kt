@@ -67,6 +67,7 @@ import com.unciv.ui.screens.worldscreen.unit.actions.UnitActionsTable
 import com.unciv.ui.screens.worldscreen.worldmap.WorldMapHolder
 import com.unciv.ui.screens.worldscreen.worldmap.WorldMapTileUpdater.updateTiles
 import com.unciv.utils.Concurrency
+import com.unciv.utils.Log
 import com.unciv.utils.debug
 import com.unciv.utils.launchOnGLThread
 import com.unciv.utils.launchOnThreadPool
@@ -75,6 +76,7 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.coroutineScope
 import yairm210.purity.annotations.Readonly
+import java.io.PrintWriter
 import java.util.Timer
 import kotlin.concurrent.timer
 
@@ -256,9 +258,30 @@ class WorldScreen(
                 val setupInfo = GameSetupInfo(gameInfo)
                 setupInfo.mapParameters.reseed()
                 GameStarter.startNewGame(setupInfo)
-            } catch (_: Exception) {
+            } catch (ex: Exception) {
+                Log.error("Could not restart game", ex)
+                try {
+                    PrintWriter(game.files.fileWriter("lasterror.txt")).use { ex.printStackTrace(it) }
+                } catch (_: Exception) { }
                 launchOnGLThread {
-                    ToastPopup(message = "Could not restart game!", screen = this@WorldScreen)
+                    val type = ex::class.simpleName ?: "Exception"
+                    val msg = ex.message?.takeIf { it.isNotBlank() }
+                        ?: ex.cause?.message?.takeIf { it.isNotBlank() }
+                    val where = ex.stackTrace.firstOrNull()?.let { ste ->
+                        val short = ste.className.substringAfterLast('.')
+                        "$short.${ste.methodName} (${ste.fileName}:${ste.lineNumber})"
+                    }
+                    val detail = buildString {
+                        append(type)
+                        if (msg != null) append(": ").append(msg)
+                        if (where != null) append("\n").append(where)
+                        append("\n").append("Full trace: lasterror.txt")
+                    }
+                    ToastPopup(
+                        message = "Could not restart game!\n$detail",
+                        screen = this@WorldScreen,
+                        time = 12000L
+                    )
                 }
                 return@run
             }

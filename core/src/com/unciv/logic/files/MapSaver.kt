@@ -5,6 +5,7 @@ import com.unciv.UncivGame
 import com.unciv.json.json
 import com.unciv.logic.map.MapParameters
 import com.unciv.logic.map.TileMap
+import com.unciv.models.ruleset.RulesetCache
 import com.unciv.ui.screens.savescreens.Gzip
 
 object MapSaver {
@@ -37,6 +38,20 @@ object MapSaver {
     }
 
     fun getMaps(): Array<FileHandle> = UncivGame.Current.files.getLocalFile(mapsFolder).list()
+
+    /** Same search order as [com.unciv.ui.screens.newgamescreen.MapFileSelectTable] (user maps, then per-mod maps). */
+    fun findMapFileByName(mapFileName: String): FileHandle? {
+        val baseDir = UncivGame.Current.files.getLocalFile(mapsFolder)
+        if (baseDir.exists()) {
+            baseDir.list().asSequence().firstOrNull { it.name() == mapFileName }?.let { return it }
+        }
+        for (modFolder in RulesetCache.values.mapNotNull { it.folderLocation }) {
+            val modMaps = modFolder.child(mapsFolder)
+            if (modMaps.exists())
+                modMaps.list().asSequence().firstOrNull { it.name() == mapFileName }?.let { return it }
+        }
+        return null
+    }
 
     private fun mapFromJson(json: String): TileMap = json().fromJson(TileMap::class.java, json)
 
