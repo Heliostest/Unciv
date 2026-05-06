@@ -382,6 +382,8 @@
       "Pillaging this improvement yields [stats]",
       "Destroyed when pillaged",
       "Irremovable",
+      "Allows naval units to cross land",
+      "Allows land units to cross water",
       "Will not be replaced by automated units",
       "Improves [resourceFilter] resource in this tile",
       "Free [unit] appears",

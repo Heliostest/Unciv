@@ -46,9 +46,13 @@ object MovementCost {
 
         if (unit.cache.cannotMove) return 100f
 
-        if (from.isLand != to.isLand && unit.baseUnit.isLandUnit && !unit.cache.canMoveOnWater)
-            return if (from.isWater && to.isLand) unit.cache.costToDisembark ?: 100f
-            else unit.cache.costToEmbark ?: 100f
+        if (unit.baseUnit.isLandUnit && !unit.cache.canMoveOnWater) {
+            val fromEff = from.treatsAsLandForNonEmbarkedLandMovement()
+            val toEff = to.treatsAsLandForNonEmbarkedLandMovement()
+            if (fromEff != toEff)
+                return if (!fromEff && toEff) unit.cache.costToDisembark ?: 100f
+                else unit.cache.costToEmbark ?: 100f
+        }
 
         // If the movement is affected by a Zone of Control, all movement points are expended
         if (considerZoneOfControl && isMovementAffectedByZoneOfControl(unit, from, to))

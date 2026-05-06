@@ -322,6 +322,19 @@ class Tile : IsPartOfGameInfoSerialization {
 
     @Readonly fun getUnpillagedTileImprovement(): TileImprovement? = if (improvementIsPillaged) null else tileImprovement
 
+    @Readonly
+    fun isNavigableCanalForNaval(): Boolean =
+        isLand && getUnpillagedTileImprovement()?.hasUnique(UniqueType.AllowsNavalUnitsToCrossLand) == true
+
+    @Readonly
+    fun isSeaBridgeForLandUnits(): Boolean =
+        isWater && getUnpillagedTileImprovement()?.hasUnique(UniqueType.AllowsLandUnitsToCrossWater) == true
+
+    /** Land or water tiles that count as \"dry\" connectivity for embark/disembark movement costs between adjacent tiles */
+    @Readonly
+    fun treatsAsLandForNonEmbarkedLandMovement(): Boolean =
+        isLand || isSeaBridgeForLandUnits()
+
     @Readonly fun getRoadTileImprovement(): TileImprovement? {
         return if (roadStatus == RoadStatus.None) null
         else ruleset.tileImprovements[roadStatus.name]

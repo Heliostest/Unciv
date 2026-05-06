@@ -2985,6 +2985,11 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 ??? example  "Irremovable"
 	Applicable to: Improvement
 
+??? example  "Allows naval units to cross land"
+	Naval units may enter and pass through this tile while it remains unpillaged land with this improvement.
+
+	Applicable to: Improvement
+
 ??? example  "Will not be replaced by automated units"
 	Applicable to: Improvement
 

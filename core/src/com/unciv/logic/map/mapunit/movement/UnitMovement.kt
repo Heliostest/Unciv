@@ -782,7 +782,8 @@ class UnitMovement(val unit: MapUnit) {
         }
         if (tile.isLand
             && unit.baseUnit.isWaterUnit
-            && !tile.isCityCenter())
+            && !tile.isCityCenter()
+            && !tile.isNavigableCanalForNaval())
             return CannotMoveToReason.BoatCannotGoOnLand
 
         val unitSpecificAllowOcean: Boolean by lazy {
@@ -790,7 +791,7 @@ class UnitMovement(val unit: MapUnit) {
                 unit.civ.getMatchingUniques(UniqueType.UnitsMayEnterOcean)
                     .any { unit.matchesFilter(it.params[0]) }
         }
-        if (tile.isWater && unit.baseUnit.isLandUnit && !unit.cache.canMoveOnWater) {
+        if (tile.isWater && unit.baseUnit.isLandUnit && !unit.cache.canMoveOnWater && !tile.isSeaBridgeForLandUnits()) {
             if (!unit.civ.tech.unitsCanEmbark) return CannotMoveToReason.CannotEmbark
             if (unit.cache.cannotEmbark) return CannotMoveToReason.CannotEmbark
             if (tile.isOcean && !unit.civ.tech.embarkedUnitsCanEnterOcean && !unitSpecificAllowOcean)
