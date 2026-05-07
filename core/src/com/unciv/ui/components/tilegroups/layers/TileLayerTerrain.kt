@@ -42,10 +42,10 @@ class TileLayerTerrain(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
         else resourceAndImprovementSequence.map { strings.orFallback { getTile(it) } }.toList()
     }
 
-    private fun usePillagedImprovementImage(tile: Tile, viewingCiv: Civilization?): Boolean {
+    private fun usePillagedImprovementImage(tile: Tile, viewingCiv: Civilization?, directedGraphicBase: String): Boolean {
         if (!tile.improvementIsPillaged || !UncivGame.Current.settings.showPixelImprovements) return false
-        val shownImprovement = tile.getShownImprovement(viewingCiv) ?: return false
-        return ImageGetter.imageExists(strings.getTile("$shownImprovement-Pillaged"))
+        if (tile.getShownImprovement(viewingCiv) == null) return false
+        return ImageGetter.imageExists(strings.getTile("$directedGraphicBase-Pillaged"))
     }
 
     private fun getTileBaseImageLocations(viewingCiv: Civilization?): List<String> {
@@ -58,6 +58,7 @@ class TileLayerTerrain(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
         val tile = tileGroup.tile
 
         val shownImprovement = tile.getShownImprovement(viewingCiv)
+        val directedImprovementGraphic = shownImprovement?.let { tile.getDirectedCrossingImprovementName(it) }
         val shouldShowImprovement = shownImprovement != null && UncivGame.Current.settings.showPixelImprovements
 
         val shouldShowResource = UncivGame.Current.settings.showPixelImprovements && tile.resource != null &&
@@ -68,9 +69,10 @@ class TileLayerTerrain(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
         else sequence {
             if (shouldShowResource)  yield(tile.resource!!)
             if (shouldShowImprovement) {
-                if (usePillagedImprovementImage(tile, viewingCiv))
-                    yield("$shownImprovement-Pillaged")
-                else yield(shownImprovement!!)
+                val g = directedImprovementGraphic!!
+                if (usePillagedImprovementImage(tile, viewingCiv, g))
+                    yield("$g-Pillaged")
+                else yield(g)
             }
         }
 
@@ -224,7 +226,9 @@ class TileLayerTerrain(tileGroup: TileGroup, size: Float) : TileLayer(tileGroup,
     private fun updateTileColor(viewingCiv: Civilization?) {
         val isViewable = viewingCiv == null || isViewable(viewingCiv)
         val tile = tileGroup.tile
-        val colorPillagedTile = isViewable && tile.isPillaged() && !usePillagedImprovementImage(tile, viewingCiv)
+        val colorPillagedTile = isViewable && tile.isPillaged() && !(tile.getShownImprovement(viewingCiv)?.let { shown ->
+            usePillagedImprovementImage(tile, viewingCiv, tile.getDirectedCrossingImprovementName(shown))
+        } ?: false)
 
         val baseTerrainColor = when {
             colorPillagedTile && strings.tileSetConfig.useColorAsBaseTerrain -> tile.getBaseTerrain()

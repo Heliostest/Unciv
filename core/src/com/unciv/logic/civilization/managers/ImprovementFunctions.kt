@@ -1,6 +1,7 @@
 package com.unciv.logic.civilization.managers
 
 import com.unciv.logic.civilization.Civilization
+import com.unciv.logic.map.mapunit.MapUnit
 import com.unciv.logic.map.tile.ImprovementBuildingProblem
 import com.unciv.logic.map.tile.Tile
 import com.unciv.models.ruleset.tile.TileImprovement
@@ -49,7 +50,17 @@ object ImprovementFunctions {
                     .any { civInfo.getResourceAmount(it.params[1]) < it.params[0].toInt() *
                             (if (it.isModifiedByGameSpeed()) civInfo.gameInfo.speed.modifier else 1f) })
                 yield(ImprovementBuildingProblem.MissingResources)
-            
+
+            val builder = gameContext.unit
+            if (tile != null && builder != null) {
+                for (unique in improvement.getMatchingUniques(UniqueType.ConsumesUnitsWhenBuilt, gameContext)) {
+                    val required = unique.params[0].toInt()
+                    val filter = unique.params[1]
+                    if (countCooperatingUnitsForConsumesWhenBuilt(tile, civInfo, filter) < required)
+                        yield(ImprovementBuildingProblem.NotEnoughAdjacentUnits)
+                }
+            }
+
             if (tile != null) {
                 if (tile.getOwner() != civInfo
                     && !improvement.hasUnique(UniqueType.CanBuildOutsideBorders, gameContext)
@@ -72,5 +83,51 @@ object ImprovementFunctions {
         else {
                 yield(ImprovementBuildingProblem.WrongCiv)
         }
+    }
+
+    @Readonly
+    fun countCooperatingUnitsForConsumesWhenBuilt(tile: Tile, civ: Civilization, filter: String): Int =
+        (sequenceOf(tile) + tile.neighbors.asSequence())
+            .flatMap { it.getUnits() }
+            .filter { it.civ == civ && it.matchesFilter(filter) }
+            .distinctBy { it.id }
+            .count()
+
+    fun consumeUnitsWhenImprovementBuilt(
+        improvement: TileImprovement,
+        buildTile: Tile,
+        actingUnit: MapUnit,
+        actingUnitConsumedByActionModifier: Boolean
+    ) {
+        val unique = improvement.getMatchingUniques(UniqueType.ConsumesUnitsWhenBuilt, GameContext.IgnoreConditionals)
+            .firstOrNull() ?: return
+        val amount = unique.params[0].toInt()
+        val filter = unique.params[1]
+        val civ = actingUnit.civ
+        val candidates = (sequenceOf(buildTile) + buildTile.neighbors.asSequence())
+            .flatMap { it.getUnits() }
+            .filter { it.civ == civ && it.matchesFilter(filter) }
+            .distinctBy { it.id }
+            .toMutableList()
+        if (actingUnit !in candidates) return
+        val toDestroy = mutableListOf<MapUnit>()
+        if (actingUnitConsumedByActionModifier) {
+            candidates.remove(actingUnit)
+            repeat(amount - 1) {
+                if (candidates.isEmpty()) return
+                toDestroy.add(candidates.removeAt(0))
+            }
+        } else {
+            toDestroy.add(actingUnit)
+            candidates.remove(actingUnit)
+            while (toDestroy.size < amount && candidates.isNotEmpty()) {
+                toDestroy.add(candidates.removeAt(0))
+            }
+            if (toDestroy.size < amount) return
+        }
+        for (u in toDestroy.filter { it != actingUnit }) {
+            if (!u.isDestroyed) u.destroy()
+        }
+        if (actingUnit in toDestroy && !actingUnit.isDestroyed) actingUnit.destroy()
     }
 }

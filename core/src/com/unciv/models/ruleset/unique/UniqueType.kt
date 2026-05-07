@@ -705,6 +705,9 @@ enum class UniqueType(
         docDescription = "Naval units may enter and pass through this tile while it remains unpillaged land with this improvement."),
     AllowsLandUnitsToCrossWater("Allows land units to cross water", UniqueTarget.Improvement,
         docDescription = "Land units without water movement may enter and pass through this unpillaged water tile (acts as a bridge). Naval units are unaffected."),
+    ConsumesUnitsWhenBuilt("Consumes [positiveAmount] [mapUnitFilter] units on this tile and adjacent tiles", UniqueTarget.Improvement,
+        docDescription = "When built instantly (e.g. by Work Boats), destroys this many matching friendly units on the build tile and adjacent tiles. " +
+            "If the builder is not removed by <by consuming this unit>, it is included in the count."),
     AutomatedUnitsWillNotReplace("Will not be replaced by automated units", UniqueTarget.Improvement),
     ImprovesResources("Improves [resourceFilter] resource in this tile", UniqueTarget.Improvement, flags = UniqueFlag.setOfNoConditionals,
         docDescription = "This is offered as an alternative to the improvedBy field of a resource." +

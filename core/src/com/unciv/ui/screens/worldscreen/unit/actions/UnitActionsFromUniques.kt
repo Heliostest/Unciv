@@ -301,7 +301,39 @@ object UnitActionsFromUniques {
     internal fun getImprovementCreationActions(unit: MapUnit, tile: Tile) = sequence {
         val waterImprovementAction = getWaterImprovementAction(unit, tile)
         if (waterImprovementAction != null) yield(waterImprovementAction)
+        yieldAll(getWorkBoatConsumesUnitsImprovementActions(unit, tile))
         yieldAll(getImprovementConstructionActionsFromGeneralUnique(unit, tile))
+    }
+
+    private fun getWorkBoatConsumesUnitsImprovementActions(unit: MapUnit, tile: Tile) = sequence {
+        if (!unit.hasUnique(UniqueType.CreateWaterImprovements)) return@sequence
+        if (!tile.isWater) return@sequence
+        val gameContext = GameContext(civInfo = unit.civ, unit = unit, tile = tile)
+        val civResources = unit.civ.getCivResourcesByName()
+        val wbUnique = unit.getMatchingUniques(UniqueType.CreateWaterImprovements).first()
+        val useFrequency = getUseFrequency(unit, wbUnique, 85f)
+        for (improvement in tile.ruleset.tileImprovements.values) {
+            if (improvement.getMatchingUniques(UniqueType.ConsumesUnitsWhenBuilt, GameContext.IgnoreConditionals).none())
+                continue
+            if (tile.improvementFunctions.getImprovementBuildingProblems(improvement, gameContext).any { it.permanent })
+                continue
+            val resourcesAvailable = improvement.getMatchingUniques(UniqueType.ConsumesResources).none { improvementUnique ->
+                (civResources[improvementUnique.params[1]] ?: 0) < improvementUnique.params[0].toInt()
+            }
+            if (!resourcesAvailable) continue
+            yield(UnitAction(UnitActionType.CreateImprovement, useFrequency,
+                title = "Create [${improvement.name}]",
+                action = {
+                    tile.setImprovement(improvement, unit.civ, unit)
+                    ImprovementFunctions.consumeUnitsWhenImprovementBuilt(improvement, tile, unit, false)
+                    unit.civ.cache.updateViewableTiles()
+                }.takeIf {
+                    unit.hasMovement()
+                        && tile.improvementFunctions.canBuildImprovement(improvement, unit.cache.state)
+                        && !tile.isMarkedForCreatesOneImprovement()
+                }
+            ))
+        }
     }
 
     private fun getWaterImprovementAction(unit: MapUnit, tile: Tile): UnitAction? {
@@ -351,10 +383,21 @@ object UnitActionsFromUniques {
                     action = {
                         val unitTile = unit.getTile()
                         unitTile.setImprovement(improvement, unit.civ, unit)
-
-                        unit.civ.cache.updateViewableTiles() // to update 'last seen improvement'
-
-                        UnitActionModifiers.activateSideEffects(unit, unique)
+                        val consumesAdjacentUnits = improvement.getMatchingUniques(UniqueType.ConsumesUnitsWhenBuilt, GameContext.IgnoreConditionals).any()
+                        val consumesSelfModifier = unique.hasModifier(UniqueType.UnitActionConsumeUnit)
+                        when {
+                            consumesAdjacentUnits && !consumesSelfModifier -> {
+                                UnitActionModifiers.activateSideEffects(unit, unique)
+                                ImprovementFunctions.consumeUnitsWhenImprovementBuilt(improvement, unitTile, unit, false)
+                            }
+                            consumesAdjacentUnits && consumesSelfModifier -> {
+                                ImprovementFunctions.consumeUnitsWhenImprovementBuilt(improvement, unitTile, unit, true)
+                                if (!unit.isDestroyed)
+                                    UnitActionModifiers.activateSideEffects(unit, unique)
+                            }
+                            else -> UnitActionModifiers.activateSideEffects(unit, unique)
+                        }
+                        unit.civ.cache.updateViewableTiles()
                     }.takeIf {
                         resourcesAvailable
                             && unit.hasMovement()

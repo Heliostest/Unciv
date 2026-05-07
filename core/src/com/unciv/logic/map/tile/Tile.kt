@@ -398,6 +398,40 @@ class Tile : IsPartOfGameInfoSerialization {
         if (viewingCiv == null || viewingCiv.playerType == PlayerType.AI || viewingCiv.isSpectator()) improvement
         else viewingCiv.getLastSeenImprovement(position)
 
+    /**
+     * Suffix for directional canal/bridge pixel layers: two opposite endpoint neighbors (water for canal, land for bridge) -> [-Straight],
+     * otherwise [-Bend]; three or more such neighbors -> [-Straight].
+     */
+    @Readonly
+    fun getDirectedCrossingImprovementName(improvementName: String): String {
+        if (!isTilemapInitialized()) return improvementName
+        val impr = ruleset.tileImprovements[improvementName] ?: return improvementName
+        val suffix = when {
+            impr.hasUnique(UniqueType.AllowsNavalUnitsToCrossLand) ->
+                graphicSuffixForCrossingEndpoints { it.isWater }
+            impr.hasUnique(UniqueType.AllowsLandUnitsToCrossWater) ->
+                graphicSuffixForCrossingEndpoints { it.isLand }
+            else -> null
+        }
+        return if (suffix.isNullOrEmpty()) improvementName else improvementName + suffix
+    }
+
+    @Readonly
+    private fun graphicSuffixForCrossingEndpoints(endpointFilter: (Tile) -> Boolean): String {
+        val clocks = neighbors.filter(endpointFilter)
+            .mapNotNull { tileMap.getNeighborTileClockPosition(this, it) }
+            .filter { it > 0 }
+            .toSet()
+        return when {
+            clocks.size >= 3 -> "-Straight"
+            clocks.size <= 1 -> "-Bend"
+            else -> {
+                val sorted = clocks.toList().sorted()
+                if (kotlin.math.abs(sorted[0] - sorted[1]) == 6) "-Straight" else "-Bend"
+            }
+        }
+    }
+
     /** Returns true if this tile has fallout or an equivalent terrain feature */
     @Readonly fun hasFalloutEquivalent(): Boolean = terrainFeatures.any { ruleset.terrains[it]!!.hasUnique(UniqueType.NullifyYields)}
 
@@ -829,6 +863,7 @@ class Tile : IsPartOfGameInfoSerialization {
 
     /** Will be false if this is a "fake tile" - either created for calculation purposes, 
      * or to display how things look e.g. in Civilopedia  */
+    @Readonly
     fun isTilemapInitialized() = ::tileMap.isInitialized
 
     //endregion

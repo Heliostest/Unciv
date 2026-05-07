@@ -333,6 +333,8 @@ class ImprovementPickerScreen(
                     .map { "Acquire more [${it.params[1]}]" to ruleset.tileResources[it.params[1]]?.makeLink() }
                 proposedSolutions.addAll(resources)
             }
+            if (ImprovementBuildingProblem.NotEnoughAdjacentUnits in unbuildableBecause)
+                proposedSolutions.add("Move more matching units onto this tile and adjacent tiles" to null)
         }
         return report
     }

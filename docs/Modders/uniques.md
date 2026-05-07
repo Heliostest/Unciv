@@ -2990,6 +2990,18 @@ Simple unique parameters are explained by mouseover. Complex parameters are expl
 
 	Applicable to: Improvement
 
+??? example  "Allows land units to cross water"
+	Land units without water movement may enter and pass through this unpillaged water tile (acts as a bridge). Naval units are unaffected.
+
+	Applicable to: Improvement
+
+??? example  "Consumes [positiveAmount] [mapUnitFilter] units on this tile and adjacent tiles"
+	When built instantly (e.g. by Work Boats), destroys this many matching friendly units on the build tile and adjacent tiles. If the builder is not removed by &lt;by consuming this unit&gt;, it is included in the count.
+
+	Example: "Consumes [3] [Wounded] units on this tile and adjacent tiles"
+
+	Applicable to: Improvement
+
 ??? example  "Will not be replaced by automated units"
 	Applicable to: Improvement
 

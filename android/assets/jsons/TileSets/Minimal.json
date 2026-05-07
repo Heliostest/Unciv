@@ -15,6 +15,14 @@
         "Marsh":0.35,
         "Mountain":0.5,
         "NaturalWonder":0.5,
-        "Oasis":0.35
+        "Oasis":0.35,
+        "Navigable Canal-Straight":0.35,
+        "Navigable Canal-Bend":0.35,
+        "Navigable Canal-Straight-Pillaged":0.35,
+        "Navigable Canal-Bend-Pillaged":0.35,
+        "Sea Bridge-Straight":0.35,
+        "Sea Bridge-Bend":0.35,
+        "Sea Bridge-Straight-Pillaged":0.35,
+        "Sea Bridge-Bend-Pillaged":0.35
     }
 }

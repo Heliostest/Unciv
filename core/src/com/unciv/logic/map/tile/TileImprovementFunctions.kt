@@ -33,6 +33,7 @@ enum class ImprovementBuildingProblem(
     UnmetConditional,
     Obsolete(permanent = true),
     MissingResources(reportable = true),
+    NotEnoughAdjacentUnits(reportable = true),
     Other
 }
 

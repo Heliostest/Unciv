@@ -384,6 +384,7 @@
       "Irremovable",
       "Allows naval units to cross land",
       "Allows land units to cross water",
+      "Consumes [positiveAmount] [mapUnitFilter] units on this tile and adjacent tiles",
       "Will not be replaced by automated units",
       "Improves [resourceFilter] resource in this tile",
       "Free [unit] appears",
